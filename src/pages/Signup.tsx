@@ -7,7 +7,7 @@ const Signup = () => {
     name: "",
     email: "",
     password: "",
-    role: "user", 
+    role: "user",
   });
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -21,9 +21,12 @@ const Signup = () => {
     setError(null);
 
     try {
-      const response = await axios.post("http://localhost:5002/api/auth/signup", formData);
+      const response = await axios.post(
+        `${process.env.REACT_APP_API_BASE_URL }/api/auth/signup`,
+        formData
+      );
       console.log("Signup successful:", response.data);
-      navigate("/login"); 
+      navigate("/login");
     } catch (err) {
       setError("Signup failed. Please check your details.");
       console.error("Signup Error:", err);
@@ -90,7 +93,10 @@ const Signup = () => {
           </button>
         </form>
         <p className="mt-4 text-sm text-center text-gray-600">
-          Already have an account? <a href="/login" className="text-blue-600 hover:underline">Login</a>
+          Already have an account?{" "}
+          <a href="/login" className="text-blue-600 hover:underline">
+            Login
+          </a>
         </p>
       </div>
     </div>

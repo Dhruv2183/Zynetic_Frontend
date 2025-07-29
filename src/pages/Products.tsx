@@ -37,8 +37,10 @@ const Products: React.FC<ProductsProps> = ({ role }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.get("http://localhost:5002/api/products");
-      setProducts(response.data);
+      const response = await axios.get(
+      `${process.env.REACT_APP_API_BASE_URL}/api/products`
+    );
+    setProducts(response.data);
     } catch (error: any) {
       setError("Failed to fetch products. Please try again.");
       console.error("Error fetching products:", error);
@@ -60,10 +62,12 @@ const Products: React.FC<ProductsProps> = ({ role }) => {
     }
 
     try {
-      await axios.delete(`http://localhost:5002/api/products/${id}`, {
+       await axios.delete(
+      `${process.env.REACT_APP_API_BASE_URL}/api/products/${id}`,
+      {
         headers: { Authorization: `Bearer ${token}` },
-      });
-
+      }
+    );
       setProducts(products.filter((product) => product._id !== id));
     } catch (error: any) {
       console.error("Error deleting product:", error);

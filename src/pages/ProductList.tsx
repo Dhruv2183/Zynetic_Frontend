@@ -1,6 +1,6 @@
+
 import React, { useState } from "react";
 import axios from "axios";
-
 
 interface Product {
   _id: string;
@@ -21,7 +21,10 @@ const ProductList: React.FC<ProductListProps> = ({ products, role, handleDeleteP
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  const handleEditClick = (product: Product) => setEditingProduct({ ...product });
+  const handleEditClick = (product: Product) => {
+    setEditingProduct({ ...product });
+    setImageFile(null); // Clear image file when opening editor
+  };
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (!editingProduct) return;
@@ -53,16 +56,28 @@ const ProductList: React.FC<ProductListProps> = ({ products, role, handleDeleteP
         formData.append("image", imageFile);
       }
 
-      await axios.put(`http://localhost:5002/api/products/${editingProduct._id}`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const res = await axios.put(
+      `${process.env.REACT_APP_API_BASE_URL}/api/products/${editingProduct._id}`,
+      formData,
+      {
+        headers: { 
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        },
+      }
+    );
+
+      console.log("✅ Updated product:", res.data);
+      alert("Product updated successfully.");
 
       setEditingProduct(null);
       setImageFile(null);
-      
-      window.location.reload(); 
-    } catch (error) {
-      console.error("Error updating product:", error);
+
+      // Refresh the page or ideally use a state update
+      window.location.reload();
+    } catch (error: any) {
+      console.error("❌ Error updating product:", error.response?.data || error.message);
+      alert("Failed to update product. Check console for more info.");
     }
   };
 
@@ -77,7 +92,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, role, handleDeleteP
             <p className="text-gray-600">Stock: {product.stock}</p>
             {product.image && (
               <img
-                src={`http://localhost:5002${product.image}`}
+                src={product.image}
                 alt={product.name}
                 className="mt-2 w-32 h-32 object-cover rounded"
                 onError={(e) => (e.currentTarget.style.display = "none")}
@@ -102,6 +117,7 @@ const ProductList: React.FC<ProductListProps> = ({ products, role, handleDeleteP
           )}
         </li>
       ))}
+
       {editingProduct && (
         <form onSubmit={handleUpdate} className="edit-form p-4 border rounded shadow-md mt-4">
           <input
@@ -132,8 +148,15 @@ const ProductList: React.FC<ProductListProps> = ({ products, role, handleDeleteP
             onChange={handleInputChange}
             className="border p-2 rounded w-full mb-2"
           />
-          <input type="file" onChange={handleImageChange} className="border p-2 rounded w-full mb-2" />
-          <button type="submit" className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition">
+          <input
+            type="file"
+            onChange={handleImageChange}
+            className="border p-2 rounded w-full mb-2"
+          />
+          <button
+            type="submit"
+            className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition"
+          >
             Save
           </button>
         </form>
@@ -143,3 +166,4 @@ const ProductList: React.FC<ProductListProps> = ({ products, role, handleDeleteP
 };
 
 export default ProductList;
+

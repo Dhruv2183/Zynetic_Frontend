@@ -17,7 +17,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ fetchProducts, setShowAddForm
     price: 0,
     category: "",
     stock: 0,
-    size: [] as string[], 
+    size: [] as string[],
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -39,30 +39,52 @@ const ProductForm: React.FC<ProductFormProps> = ({ fetchProducts, setShowAddForm
       const formData = new FormData();
       formData.append("name", newProduct.name);
       formData.append("description", newProduct.description);
-      formData.append("price", String(newProduct.price));
+      formData.append("price", newProduct.price.toString());
       formData.append("category", newProduct.category);
-      formData.append("stock", String(newProduct.stock));
-      formData.append("size", JSON.stringify(newProduct.size));
+      formData.append("stock", newProduct.stock.toString());
+
+      // Append sizes individually
+      newProduct.size.forEach((s) => formData.append("size", s));
 
       if (imageFile) {
         formData.append("image", imageFile);
       }
 
-      await axios.post("http://localhost:5002/api/products", formData, {
+      console.log("📦 Sending FormData:", Object.fromEntries(formData.entries()));
+
+      const response = await axios.post(
+      `${process.env.REACT_APP_API_BASE_URL}/api/products`,
+      formData,
+      {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",
         },
-      });
+      }
+    );
 
+      console.log("✅ Product added successfully:", response.data);
+      alert("✅ Product added!");
+
+      // Reset form
       fetchProducts();
       setShowAddForm(false);
       setNewProduct({ name: "", description: "", price: 0, category: "", stock: 0, size: [] });
       setImageFile(null);
       setImagePreview(null);
     } catch (error: any) {
-      console.error("Error adding product:", error.response?.data || error.message);
-      alert("Failed to add product. Check console for details.");
+      console.error("❌ Error adding product:", error);
+
+      if (error.response) {
+        console.error("🚨 Backend Response Error:", error.response.data);
+        alert(error.response.data.message || "Server error occurred.");
+      } else if (error.request) {
+        console.error("📡 Network Error:", error.request);
+        alert("Network issue: Unable to reach server.");
+      } else {
+        console.error("⚙️ Client Error:", error.message);
+        alert("Something went wrong: " + error.message);
+      }
     }
   };
 
@@ -77,35 +99,79 @@ const ProductForm: React.FC<ProductFormProps> = ({ fetchProducts, setShowAddForm
   return (
     <div className="max-w-lg mx-auto p-6 bg-white shadow-xl rounded-lg backdrop-blur-md">
       <div className="grid grid-cols-2 gap-4">
-        <input type="text" placeholder="Product Name" value={newProduct.name} 
-          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })} 
-          className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500" />
+        <input
+          type="text"
+          placeholder="Product Name"
+          value={newProduct.name}
+          onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+          className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+        />
 
-        <select value={newProduct.category} onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })} 
-          className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500">
+        <select
+          value={newProduct.category}
+          onChange={(e) => setNewProduct({ ...newProduct, category: e.target.value })}
+          className="border p-3 rounded-lg w-full focus:ring-2 focus:ring-blue-500"
+        >
           <option value="">Select Category</option>
           {categoryOptions.map((cat) => (
-            <option key={cat} value={cat}>{cat}</option>
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
           ))}
         </select>
 
-        <input type="number" placeholder="Price" value={newProduct.price || ""}
-          onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value ? Number(e.target.value) : 0 })} 
-          className="border p-3 rounded-lg w-full remove-arrows" />
+        <input
+          type="number"
+          placeholder="Price"
+          value={newProduct.price || ""}
+          onChange={(e) =>
+            setNewProduct({
+              ...newProduct,
+              price: e.target.value ? Number(e.target.value) : 0,
+            })
+          }
+          className="border p-3 rounded-lg w-full remove-arrows"
+        />
 
-        <input type="number" placeholder="Stock Quantity" value={newProduct.stock || ""}
-          onChange={(e) => setNewProduct({ ...newProduct, stock: e.target.value ? Number(e.target.value) : 0 })} 
-          className="border p-3 rounded-lg w-full remove-arrows" />
+        <input
+          type="number"
+          placeholder="Stock Quantity"
+          value={newProduct.stock || ""}
+          onChange={(e) =>
+            setNewProduct({
+              ...newProduct,
+              stock: e.target.value ? Number(e.target.value) : 0,
+            })
+          }
+          className="border p-3 rounded-lg w-full remove-arrows"
+        />
       </div>
 
-      <textarea placeholder="Product Description" value={newProduct.description} 
-        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })} 
-        className="border p-3 rounded-lg w-full mt-4 focus:ring-2 focus:ring-blue-500" />
+      <textarea
+        placeholder="Product Description"
+        value={newProduct.description}
+        onChange={(e) => setNewProduct({ ...newProduct, description: e.target.value })}
+        className="border p-3 rounded-lg w-full mt-4 focus:ring-2 focus:ring-blue-500"
+      />
 
       <div className="mt-4 flex flex-wrap gap-2">
         {sizeOptions.map((size) => (
-          <button key={size} onClick={() => setNewProduct({ ...newProduct, size: newProduct.size.includes(size) ? newProduct.size.filter((s) => s !== size) : [...newProduct.size, size] })} 
-            className={`px-4 py-2 rounded-lg transition-all border-2 ${newProduct.size.includes(size) ? 'bg-blue-500 text-white border-blue-700' : 'bg-gray-200 border-gray-300 hover:bg-gray-300'}`}>
+          <button
+            key={size}
+            onClick={() =>
+              setNewProduct({
+                ...newProduct,
+                size: newProduct.size.includes(size)
+                  ? newProduct.size.filter((s) => s !== size)
+                  : [...newProduct.size, size],
+              })
+            }
+            className={`px-4 py-2 rounded-lg transition-all border-2 ${
+              newProduct.size.includes(size)
+                ? "bg-blue-500 text-white border-blue-700"
+                : "bg-gray-200 border-gray-300 hover:bg-gray-300"
+            }`}
+          >
             {size}
           </button>
         ))}
@@ -113,11 +179,25 @@ const ProductForm: React.FC<ProductFormProps> = ({ fetchProducts, setShowAddForm
 
       <div className="mt-4">
         <label className="block">Product Image</label>
-        <input type="file" onChange={handleImageChange} className="border p-2 rounded-lg w-full" />
-        {imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 w-32 h-32 object-cover rounded-lg shadow-lg" />}
+        <input
+          type="file"
+          onChange={handleImageChange}
+          className="border p-2 rounded-lg w-full"
+          accept="image/*"
+        />
+        {imagePreview && (
+          <img
+            src={imagePreview}
+            alt="Preview"
+            className="mt-2 w-32 h-32 object-cover rounded-lg shadow-lg"
+          />
+        )}
       </div>
 
-      <button onClick={handleAddProduct} className="mt-4 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-3 rounded-lg w-full font-bold shadow-lg hover:scale-105 transition-all">
+      <button
+        onClick={handleAddProduct}
+        className="mt-4 bg-gradient-to-r from-blue-600 to-blue-800 text-white px-6 py-3 rounded-lg w-full font-bold shadow-lg hover:scale-105 transition-all"
+      >
         Add Product
       </button>
     </div>

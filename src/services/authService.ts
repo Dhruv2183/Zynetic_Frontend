@@ -1,7 +1,7 @@
 import axios from "axios";
 import { jwtDecode } from "jwt-decode"; 
 
-const API_URL = "http://localhost:5002/api/auth";
+const API_URL = process.env.REACT_APP_API_BASE_URL;
 
 
 axios.defaults.headers.common["Content-Type"] = "application/json";
